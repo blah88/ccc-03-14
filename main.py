@@ -17,7 +17,12 @@ migrate = Migrate()
 
 def create_app():
     app = Flask(__name__)
+    
     app.config.from_object("default_settings.app_config")
+
+    if app.config["ENV"] == "production":
+        from log_handlers import file_handler
+        app.logger.addHandler(file_handler)
 
     db.init_app(app)
     ma.init_app(app)
@@ -36,5 +41,10 @@ def create_app():
     @app.errorhandler(ValidationError)
     def handle_bad_request(error):
         return (jsonify(error.messages), 400)
-    
+
+    @app.errorhandler(500)
+    def handle_500(error):
+        app.logger.error(error)
+        return ("bad stuff", 500)
+
     return app
